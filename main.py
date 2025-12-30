@@ -25,20 +25,58 @@ bot = telebot.TeleBot('8355692996:AAGllY4NycCAQlnP5O5y06NdNx7MCwW44Ok')
 user_states = {}
 
 
-def send_date_selection(chat_id, message_id=None):
+def send_summary(chat_id, state, message_id=None):
+    date = state.get('date', 'Не выбрано')
+    time = state.get('time', 'Не выбрано')
+    name = state.get('name', state.get('default_name', 'Не выбрано'))
+    text = f"Вы выбрали:\n" \
+           f"\U0001F4C5 Дата: {date}\n" \
+           f"\u23F0 Время: {time}\n" \
+           f"\U0001F464 Имя: {name}\n"
     markup = types.InlineKeyboardMarkup()
-    for date in available_data["availableDates"]:
-        markup.add(types.InlineKeyboardButton(date["date"], callback_data=f"date_{date['date']}"))
-    if message_id:
-        bot.edit_message_text("Пожалуйста, выберите дату:", chat_id, message_id, reply_markup=markup)
+    if not state.get('date'):
+        for d in available_data["availableDates"]:
+            markup.add(types.InlineKeyboardButton(d["date"], callback_data=f"date_{d['date']}"))
+        markup.add(types.InlineKeyboardButton("Отмена", callback_data="cancel"))
+    elif not state.get('time'):
+        times = next((d['times'] for d in available_data['availableDates'] if d['date'] == state['date']), [])
+        for t in times:
+            markup.add(types.InlineKeyboardButton(t, callback_data=f"time_{t}"))
+        markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_date"))
+    elif not state.get('name'):
+        markup.add(types.InlineKeyboardButton("Использовать имя Telegram", callback_data="name_tg"))
+        markup.add(types.InlineKeyboardButton("Ввести имя вручную", callback_data="name_manual"))
+        markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_time"))
     else:
-        bot.send_message(chat_id, "Пожалуйста, выберите дату:", reply_markup=markup)
+        markup.add(types.InlineKeyboardButton("✅ Подтвердить", callback_data="confirm"))
+        markup.add(types.InlineKeyboardButton("🔄 Назад", callback_data="back_to_name"))
+    if message_id:
+        bot.edit_message_text(text, chat_id, message_id, reply_markup=markup, parse_mode='HTML')
+    else:
+        msg = bot.send_message(chat_id, text, reply_markup=markup, parse_mode='HTML')
+        return msg
+
+
+@bot.callback_query_handler(func=lambda call: call.data == 'cancel')
+def cancel_registration(call):
+    chat_id = call.message.chat.id
+    data = user_states.get(chat_id, {})
+    msg_id = data.get('summary_msg_id') or call.message.message_id
+    try:
+        bot.edit_message_text("Запись прервана", chat_id, msg_id, reply_markup=None)
+    except Exception:
+        try:
+            bot.send_message(chat_id, "Запись прервана")
+        except Exception:
+            pass
 
 @bot.message_handler(commands=['register'])
 def register(message):
     chat_id = message.chat.id
-    user_states[chat_id] = {}
-    send_date_selection(chat_id)
+    default_name = f"{message.from_user.first_name or ''} {message.from_user.last_name or ''}".strip() or "Гость"
+    user_states[chat_id] = {'default_name': default_name}
+    msg = send_summary(chat_id, user_states[chat_id])
+    user_states[chat_id]['summary_msg_id'] = msg.message_id
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('date_'))
@@ -46,13 +84,7 @@ def handle_date(call):
     chat_id = call.message.chat.id
     date_selected = call.data.replace('date_', '')
     user_states[chat_id]['date'] = date_selected
-    # Найти доступные времена для выбранной даты
-    times = next((d['times'] for d in available_data['availableDates'] if d['date'] == date_selected), [])
-    markup = types.InlineKeyboardMarkup()
-    for t in times:
-        markup.add(types.InlineKeyboardButton(t, callback_data=f"time_{t}"))
-    markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_date"))
-    bot.edit_message_text("Пожалуйста, выберите время:", chat_id, call.message.message_id, reply_markup=markup)
+    send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('time_'))
@@ -60,20 +92,16 @@ def handle_time(call):
     chat_id = call.message.chat.id
     time_selected = call.data.replace('time_', '')
     user_states[chat_id]['time'] = time_selected
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Использовать имя Telegram", callback_data="name_tg"))
-    markup.add(types.InlineKeyboardButton("Ввести имя вручную", callback_data="name_manual"))
-    markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_time"))
-    bot.edit_message_text("Пожалуйста, выберите способ ввода имени:", chat_id, call.message.message_id, reply_markup=markup)
+    send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('name_'))
 def handle_name_choice(call):
     chat_id = call.message.chat.id
     if call.data == 'name_tg':
-        name = call.from_user.first_name or "Гость"
+        name = f"{call.from_user.first_name or ''} {call.from_user.last_name or ''}".strip() or "Гость"
         user_states[chat_id]['name'] = name
-        confirm_registration(chat_id, call.message.message_id)
+        send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
     elif call.data == 'name_manual':
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_name"))
@@ -85,7 +113,11 @@ def handle_manual_name(message):
     chat_id = message.chat.id
     name = message.text.strip()
     user_states[chat_id]['name'] = name
-    confirm_registration(chat_id, message.message_id)
+    try:
+        bot.edit_message_reply_markup(chat_id, message.message_id)
+    except Exception:
+        pass
+    send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
 
 
 # Обработчики кнопок "Назад"
@@ -93,40 +125,33 @@ def handle_manual_name(message):
 def back_to_date(call):
     chat_id = call.message.chat.id
     user_states[chat_id].pop('date', None)
-    send_date_selection(chat_id, call.message.message_id)
+    user_states[chat_id].pop('time', None)
+    user_states[chat_id].pop('name', None)
+    send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
 
 @bot.callback_query_handler(func=lambda call: call.data == 'back_to_time')
 def back_to_time(call):
     chat_id = call.message.chat.id
-    date_selected = user_states[chat_id].get('date')
-    if not date_selected:
-        send_date_selection(chat_id, call.message.message_id)
-        return
-    times = next((d['times'] for d in available_data['availableDates'] if d['date'] == date_selected), [])
-    markup = types.InlineKeyboardMarkup()
-    for t in times:
-        markup.add(types.InlineKeyboardButton(t, callback_data=f"time_{t}"))
-    markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_date"))
-    bot.edit_message_text("Пожалуйста, выберите время:", chat_id, call.message.message_id, reply_markup=markup)
+    user_states[chat_id].pop('time', None)
+    user_states[chat_id].pop('name', None)
+    send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
 
 @bot.callback_query_handler(func=lambda call: call.data == 'back_to_name')
 def back_to_name(call):
     chat_id = call.message.chat.id
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Использовать имя Telegram", callback_data="name_tg"))
-    markup.add(types.InlineKeyboardButton("Ввести имя вручную", callback_data="name_manual"))
-    markup.add(types.InlineKeyboardButton("Назад", callback_data="back_to_time"))
-    bot.edit_message_text("Пожалуйста, выберите способ ввода имени:", chat_id, call.message.message_id, reply_markup=markup)
+    user_states[chat_id].pop('name', None)
+    send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
 
-def confirm_registration(chat_id, message_id):
+@bot.callback_query_handler(func=lambda call: call.data == 'confirm')
+def confirm_registration(call):
+    chat_id = call.message.chat.id
     data = user_states.get(chat_id, {})
     date = data.get('date', '-')
     time = data.get('time', '-')
-    name = data.get('name', '-')
+    name = data.get('name', data.get('default_name', '-'))
     text = f"Вы записаны на {date} в {time} для имени: {name}"
-    # Remove buttons from the previous message (edit to plain text, no reply_markup)
     try:
-        bot.edit_message_reply_markup(chat_id, message_id)
+        bot.edit_message_reply_markup(chat_id, data['summary_msg_id'])
     except Exception:
         pass
     bot.send_message(chat_id, text)
