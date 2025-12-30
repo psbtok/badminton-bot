@@ -156,9 +156,20 @@ def confirm_registration(call):
         pass
     bot.send_message(chat_id, text)
 
+
+# Показываем кнопку 'Регистрация' внизу экрана до начала регистрации
+main_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+main_keyboard.add(types.KeyboardButton('Регистрация'))
+
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    bot.reply_to(message, "<b>Привет!</b> Я бот для записи на бадминтон. Используй команду /register чтобы записаться.", parse_mode='HTML')
+    bot.send_message(message.chat.id, "<b>Привет!</b> Я бот для записи на бадминтон. Нажмите кнопку 'Регистрация' внизу экрана, чтобы записаться.", parse_mode='HTML', reply_markup=main_keyboard)
+
+@bot.message_handler(func=lambda m: m.text and m.text.lower() == 'регистрация')
+def registration_button_handler(message):
+    # Убираем клавиатуру и запускаем регистрацию
+    bot.send_message(message.chat.id, "Запуск регистрации...", reply_markup=types.ReplyKeyboardRemove())
+    register(message)
 
 
 
