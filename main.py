@@ -72,6 +72,8 @@ def cancel_registration(call):
 
 @bot.message_handler(commands=['register'])
 def register(message):
+    bot.send_message(message.chat.id, "Запуск регистрации...", reply_markup=types.ReplyKeyboardRemove())
+
     chat_id = message.chat.id
     default_name = f"{message.from_user.first_name or ''} {message.from_user.last_name or ''}".strip() or "Гость"
     user_states[chat_id] = {'default_name': default_name}
@@ -113,8 +115,9 @@ def handle_manual_name(message):
     chat_id = message.chat.id
     name = message.text.strip()
     user_states[chat_id]['name'] = name
+    # Удаляем сообщение с ручным вводом имени
     try:
-        bot.edit_message_reply_markup(chat_id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
     send_summary(chat_id, user_states[chat_id], user_states[chat_id]['summary_msg_id'])
@@ -149,7 +152,7 @@ def confirm_registration(call):
     date = data.get('date', '-')
     time = data.get('time', '-')
     name = data.get('name', data.get('default_name', '-'))
-    text = f"Вы записаны на {date} в {time} для имени: {name}"
+    text = f"Вы записаны на {date} в {time} на имя: {name}"
     try:
         bot.edit_message_reply_markup(chat_id, data['summary_msg_id'])
     except Exception:
@@ -168,7 +171,6 @@ def send_welcome(message):
 @bot.message_handler(func=lambda m: m.text and m.text.lower() == 'регистрация')
 def registration_button_handler(message):
     # Убираем клавиатуру и запускаем регистрацию
-    bot.send_message(message.chat.id, "Запуск регистрации...", reply_markup=types.ReplyKeyboardRemove())
     register(message)
 
 
