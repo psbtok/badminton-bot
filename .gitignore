@@ -1,2 +1,5 @@
 /Lib/*
 /Scripts/*
+
+*.db
+*__pycache__/*
