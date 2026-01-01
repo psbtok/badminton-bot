@@ -36,6 +36,7 @@ class DBOperations:
                 event_id INTEGER NOT NULL,
                 participant_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
+                joined_at TEXT,
                 FOREIGN KEY(event_id) REFERENCES events(id)
             )
         ''')

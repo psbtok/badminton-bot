@@ -1,16 +1,16 @@
 from telebot import types
 from locales import LOCALES
 import requests
+import datetime as _dt
 
 def register_event_handlers(bot, event_service):
     user_event_state = {}
 
     def get_russian_date_buttons():
-        import datetime
-        today = datetime.datetime.now(datetime.UTC)
+        today = _dt.datetime.now(_dt.timezone.utc)
         buttons = []
         for i in range(0, 11):
-            date = today + datetime.timedelta(days=i)
+            date = today + _dt.timedelta(days=i)
             day = date.day
             month = LOCALES["month_names"][date.month - 1]
             btn_text = f"{day} {month}"
@@ -20,9 +20,8 @@ def register_event_handlers(bot, event_service):
     def get_time_buttons():
         return [(f"{hour}:00", str(hour)) for hour in range(10, 21)]
 
-    @bot.message_handler(commands=['create_event'])
+    @bot.message_handler(commands=['create'])
     def handle_create_event(message):
-        print('hiii')
         user_id = message.from_user.id
         user_event_state[user_id] = {}
         markup = types.InlineKeyboardMarkup()
@@ -56,8 +55,7 @@ def register_event_handlers(bot, event_service):
             date_str = user_event_state[user_id]["date"]
             time_start = user_event_state[user_id]["time_start"]
             time_end = user_event_state[user_id]["time_end"]
-            import datetime
-            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
             formatted_date = f"{dt.day} {month_name} {dt.year}"
             summary = f"{formatted_date} с {time_start:02d}:00 до {time_end:02d}:00"
@@ -98,7 +96,6 @@ def register_event_handlers(bot, event_service):
                 # Prepare announcement text
                 formatted_date = None
                 try:
-                    import datetime as _dt
                     dt = _dt.datetime.strptime(state["date"], "%Y-%m-%d")
                     month_name = LOCALES["month_names"][dt.month - 1]
                     formatted_date = f"{dt.day} {month_name} {dt.year}"
@@ -107,7 +104,7 @@ def register_event_handlers(bot, event_service):
                 time_start = state["time_start"]
                 time_end = state["time_end"]
                 summary = f"{formatted_date} с {time_start:02d}:00 до {time_end:02d}:00"
-                announce = LOCALES.get("channel_announce", "Новая тренировка:\n{summary}").format(summary=summary)
+                announce = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
 
                 # Try creating a forum topic (thread) in the channel/supergroup, fallback to simple post
                 channel = "@badmintonOleArena"

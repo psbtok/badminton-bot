@@ -1,17 +1,18 @@
 from telebot import types
 from locales import LOCALES
 import traceback
+import datetime as _dt
+from datetime import timezone
 
 def register_register_handlers(bot, event_service):
     register_state = {}
 
     def get_all_trainings():
-        import datetime
         rows = event_service.db.cursor.execute("SELECT id, date, time_start, time_end FROM events").fetchall()
         result = []
         for row in rows:
             event_id, date_str, time_start, time_end = row
-            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
             formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
             result.append((event_id, formatted_date))
@@ -55,8 +56,7 @@ def register_register_handlers(bot, event_service):
                 bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                 return
             date_str, time_start, time_end = row
-            import datetime
-            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
             formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
             summary = LOCALES["register_summary"].format(training=formatted_date, name=register_state[user_id]['name'])
@@ -70,6 +70,8 @@ def register_register_handlers(bot, event_service):
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(LOCALES["back"], callback_data="reg_back"))
             markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="reg_cancel"))
+            # Save the prompt message id so we can remove buttons after user sends name
+            register_state.setdefault(user_id, {})["prompt_message_id"] = call.message.message_id
             bot.edit_message_text(LOCALES["register_enter_name"], chat_id, call.message.message_id, reply_markup=markup)
             bot.register_next_step_handler_by_chat_id(chat_id, handle_register_name)
             return
@@ -83,9 +85,10 @@ def register_register_handlers(bot, event_service):
         if call.data == "reg_confirm":
             state = register_state.pop(user_id, None)
             if state and "event_id" in state and "name" in state:
+                joined_at = _dt.datetime.now(timezone.utc).isoformat()
                 event_service.db.cursor.execute(
-                    "INSERT INTO event_participants (event_id, participant_id, name) VALUES (?, ?, ?)",
-                    (state["event_id"], user_id, state["name"])
+                    "INSERT INTO event_participants (event_id, participant_id, name, joined_at) VALUES (?, ?, ?, ?)",
+                    (state["event_id"], user_id, state["name"], joined_at)
                 )
                 event_service.db.conn.commit()
                 # Update announcement message in channel/thread with participants list
@@ -95,17 +98,26 @@ def register_register_handlers(bot, event_service):
                     announce_chat, announce_msg_id, announce_thread = event_service.get_event_announcement(event_id)
                     if announce_chat and announce_msg_id:
                         # Build participants list
-                        rows = event_service.db.cursor.execute("SELECT name FROM event_participants WHERE event_id = ?", (event_id,)).fetchall()
-                        names = [r[0] for r in rows]
-                        count = len(names)
+                        rows = event_service.db.cursor.execute("SELECT name, joined_at FROM event_participants WHERE event_id = ? ORDER BY joined_at", (event_id,)).fetchall()
+                        participants = [(r[0], r[1]) for r in rows]
+                        count = len(participants)
                         parts_text = "\n\nУчастники ({count}):\n".format(count=count)
-                        for i, n in enumerate(names, start=1):
-                            parts_text += f"{i}. {n}\n"
+                        for i, (n, joined) in enumerate(participants, start=1):
+                            try:
+                                joined_dt = _dt.datetime.fromisoformat(joined)
+                                local_dt = joined_dt.astimezone()
+                                time_str = local_dt.strftime('%H:%M')
+                                day = local_dt.day
+                                month_name = LOCALES["month_names"][local_dt.month - 1]
+                                date_part = f"{day} {month_name}"
+                            except Exception:
+                                time_str = "?"
+                                date_part = "?"
+                            parts_text += f"{i}. {n} ({date_part} в {time_str})\n"
 
                         # Rebuild summary to include training info
                         row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
                         if row:
-                            import datetime as _dt
                             date_str, time_start, time_end = row
                             dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                             month_name = LOCALES["month_names"][dt.month - 1]
@@ -114,7 +126,7 @@ def register_register_handlers(bot, event_service):
                         else:
                             summary = ""
 
-                        announce = LOCALES.get("channel_announce", "Новая тренировка:\n{summary}").format(summary=summary)
+                        announce = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
                         new_text = announce + parts_text
                         try:
                             if announce_thread:
@@ -130,8 +142,7 @@ def register_register_handlers(bot, event_service):
                 row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (state["event_id"],)).fetchone()
                 if row:
                     date_str, time_start, time_end = row
-                    import datetime
-                    dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                    dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                     month_name = LOCALES["month_names"][dt.month - 1]
                     formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
                     confirm_msg = LOCALES["register_confirmed_full"].format(training=formatted_date, name=state["name"])
@@ -149,14 +160,20 @@ def register_register_handlers(bot, event_service):
             bot.send_message(chat_id, LOCALES["error"])
             return
         register_state[user_id]["name"] = message.text.strip()
+        # Remove buttons from the prompt message (if we saved it)
+        prompt_msg_id = register_state[user_id].pop("prompt_message_id", None)
+        if prompt_msg_id:
+            try:
+                bot.edit_message_reply_markup(chat_id=chat_id, message_id=prompt_msg_id, reply_markup=None)
+            except Exception:
+                pass
         event_id = register_state[user_id]["event_id"]
         row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
         if not row:
             bot.send_message(chat_id, LOCALES["error"])
             return
         date_str, time_start, time_end = row
-        import datetime
-        dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
         month_name = LOCALES["month_names"][dt.month - 1]
         formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
         summary = LOCALES["register_summary"].format(training=formatted_date, name=register_state[user_id]['name'])
