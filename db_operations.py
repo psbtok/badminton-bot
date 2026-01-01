@@ -25,6 +25,9 @@ class DBOperations:
                 time_start TEXT NOT NULL,
                 time_end TEXT NOT NULL,
                 creator INTEGER NOT NULL
+                , announce_chat TEXT
+                , announce_message_id INTEGER
+                , announce_thread_id INTEGER
             )
         ''')
         self.cursor.execute('''

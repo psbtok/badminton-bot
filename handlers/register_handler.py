@@ -1,5 +1,6 @@
 from telebot import types
 from locales import LOCALES
+import traceback
 
 def register_register_handlers(bot, event_service):
     register_state = {}
@@ -87,6 +88,44 @@ def register_register_handlers(bot, event_service):
                     (state["event_id"], user_id, state["name"])
                 )
                 event_service.db.conn.commit()
+                # Update announcement message in channel/thread with participants list
+                try:
+                    event_id = state["event_id"]
+                    # Fetch announcement info
+                    announce_chat, announce_msg_id, announce_thread = event_service.get_event_announcement(event_id)
+                    if announce_chat and announce_msg_id:
+                        # Build participants list
+                        rows = event_service.db.cursor.execute("SELECT name FROM event_participants WHERE event_id = ?", (event_id,)).fetchall()
+                        names = [r[0] for r in rows]
+                        count = len(names)
+                        parts_text = "\n\nУчастники ({count}):\n".format(count=count)
+                        for i, n in enumerate(names, start=1):
+                            parts_text += f"{i}. {n}\n"
+
+                        # Rebuild summary to include training info
+                        row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
+                        if row:
+                            import datetime as _dt
+                            date_str, time_start, time_end = row
+                            dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
+                            month_name = LOCALES["month_names"][dt.month - 1]
+                            formatted_date = f"{dt.day} {month_name} {dt.year}"
+                            summary = f"{formatted_date} с {int(time_start.split(':')[0]):02d}:00 до {int(time_end.split(':')[0]):02d}:00"
+                        else:
+                            summary = ""
+
+                        announce = LOCALES.get("channel_announce", "Новая тренировка:\n{summary}").format(summary=summary)
+                        new_text = announce + parts_text
+                        try:
+                            if announce_thread:
+                                bot.edit_message_text(new_text, announce_chat, announce_msg_id, message_thread_id=int(announce_thread))
+                            else:
+                                bot.edit_message_text(new_text, announce_chat, announce_msg_id)
+                        except Exception:
+                            # ignore editing failures
+                            pass
+                except Exception:
+                    traceback.print_exc()
                 # Get event info for confirmation message
                 row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (state["event_id"],)).fetchone()
                 if row:
