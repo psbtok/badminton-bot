@@ -1,6 +1,6 @@
 from telebot import types
 from locales import LOCALES
-import requests
+from utils.announce import announce_event
 import datetime as _dt
 
 def register_event_handlers(bot, event_service):
@@ -93,51 +93,10 @@ def register_event_handlers(bot, event_service):
                     time_end=f"{state['time_end']}:00",
                     creator_id=user_id
                 )
-                # Prepare announcement text
-                formatted_date = None
                 try:
-                    dt = _dt.datetime.strptime(state["date"], "%Y-%m-%d")
-                    month_name = LOCALES["month_names"][dt.month - 1]
-                    formatted_date = f"{dt.day} {month_name} {dt.year}"
+                    announce_event(bot, event_service, event_id, state["date"], state["time_start"], state["time_end"])
                 except Exception:
-                    formatted_date = state["date"]
-                time_start = state["time_start"]
-                time_end = state["time_end"]
-                summary = f"{formatted_date} с {time_start:02d}:00 до {time_end:02d}:00"
-                announce = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
-
-                # Try creating a forum topic (thread) in the channel/supergroup, fallback to simple post
-                channel = "@badmintonOleArena"
-                token = getattr(bot, 'token', None) or getattr(bot, '_token', None)
-                thread_id = None
-                sent_msg = None
-                try:
-                    # Attempt to create a forum topic via Bot API
-                    if token:
-                        topic_name = summary[:128]
-                        resp = requests.post(
-                            f"https://api.telegram.org/bot{token}/createForumTopic",
-                            data={"chat_id": channel, "name": topic_name}
-                        )
-                        j = resp.json()
-                        if j.get("ok") and "result" in j:
-                            thread_id = j["result"].get("message_thread_id")
-
-                    # Send announcement (into thread if created)
-                    if thread_id:
-                        sent_msg = bot.send_message(channel, announce, message_thread_id=int(thread_id))
-                    else:
-                        sent_msg = bot.send_message(channel, announce)
-                except Exception:
-                    sent_msg = None
-
-                # Persist announcement location if we have a sent message
-                if sent_msg is not None:
-                    try:
-                        msg_id = getattr(sent_msg, 'message_id', None)
-                        event_service.set_event_announcement(event_id, channel, msg_id, thread_id)
-                    except Exception:
-                        pass
+                    pass
 
                 bot.edit_message_text(LOCALES["event_success"], chat_id, call.message.message_id)
             else:

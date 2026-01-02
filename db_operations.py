@@ -25,9 +25,6 @@ class DBOperations:
                 time_start TEXT NOT NULL,
                 time_end TEXT NOT NULL,
                 creator INTEGER NOT NULL
-                , announce_chat TEXT
-                , announce_message_id INTEGER
-                , announce_thread_id INTEGER
             )
         ''')
         self.cursor.execute('''
@@ -36,7 +33,6 @@ class DBOperations:
                 event_id INTEGER NOT NULL,
                 participant_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
-                joined_at TEXT,
                 FOREIGN KEY(event_id) REFERENCES events(id)
             )
         ''')

@@ -19,18 +19,25 @@ class EventService:
         self.db.conn.commit()
         return cur.lastrowid
 
-    def set_event_announcement(self, event_id, chat_id, message_id, thread_id=None):
+    def set_event_announcement(self, event_id, announce_message_id=None, private_message_id=None):
         cur = self.db.cursor
         cur.execute(
-            "UPDATE events SET announce_chat = ?, announce_message_id = ?, announce_thread_id = ? WHERE id = ?",
-            (str(chat_id), int(message_id) if message_id is not None else None, int(thread_id) if thread_id is not None else None, int(event_id))
+            "UPDATE events SET announce_message_id = ?, private_message_id = ? WHERE id = ?",
+            (
+                int(announce_message_id) if announce_message_id is not None else None,
+                int(private_message_id) if private_message_id is not None else None,
+                int(event_id),
+            ),
         )
         self.db.conn.commit()
 
     def get_event_announcement(self, event_id):
         cur = self.db.cursor
-        cur.execute("SELECT announce_chat, announce_message_id, announce_thread_id FROM events WHERE id = ?", (event_id,))
+        cur.execute(
+            "SELECT announce_message_id, private_message_id FROM events WHERE id = ?",
+            (event_id,)
+        )
         row = cur.fetchone()
         if not row:
-            return None, None, None
-        return row[0], row[1], row[2]
+            return None, None
+        return row[0], row[1]

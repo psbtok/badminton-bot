@@ -3,6 +3,7 @@ from locales import LOCALES
 import traceback
 import datetime as _dt
 from datetime import timezone
+from utils.announce import announce_event
 
 def register_register_handlers(bot, event_service):
     register_state = {}
@@ -94,48 +95,17 @@ def register_register_handlers(bot, event_service):
                 # Update announcement message in channel/thread with participants list
                 try:
                     event_id = state["event_id"]
-                    # Fetch announcement info
-                    announce_chat, announce_msg_id, announce_thread = event_service.get_event_announcement(event_id)
-                    if announce_chat and announce_msg_id:
-                        # Build participants list
-                        rows = event_service.db.cursor.execute("SELECT name, joined_at FROM event_participants WHERE event_id = ? ORDER BY joined_at", (event_id,)).fetchall()
-                        participants = [(r[0], r[1]) for r in rows]
-                        count = len(participants)
-                        parts_text = "\n\nУчастники ({count}):\n".format(count=count)
-                        for i, (n, joined) in enumerate(participants, start=1):
-                            try:
-                                joined_dt = _dt.datetime.fromisoformat(joined)
-                                local_dt = joined_dt.astimezone()
-                                time_str = local_dt.strftime('%H:%M')
-                                day = local_dt.day
-                                month_name = LOCALES["month_names"][local_dt.month - 1]
-                                date_part = f"{day} {month_name}"
-                            except Exception:
-                                time_str = "?"
-                                date_part = "?"
-                            parts_text += f"{i}. {n} ({date_part} в {time_str})\n"
-
-                        # Rebuild summary to include training info
-                        row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
-                        if row:
-                            date_str, time_start, time_end = row
-                            dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
-                            month_name = LOCALES["month_names"][dt.month - 1]
-                            formatted_date = f"{dt.day} {month_name} {dt.year}"
-                            summary = f"{formatted_date} с {int(time_start.split(':')[0]):02d}:00 до {int(time_end.split(':')[0]):02d}:00"
-                        else:
-                            summary = ""
-
-                        announce = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
-                        new_text = announce + parts_text
-                        try:
-                            if announce_thread:
-                                bot.edit_message_text(new_text, announce_chat, announce_msg_id, message_thread_id=int(announce_thread))
-                            else:
-                                bot.edit_message_text(new_text, announce_chat, announce_msg_id)
-                        except Exception:
-                            # ignore editing failures
-                            pass
+                    # Build participants list
+                    rows = event_service.db.cursor.execute(
+                        "SELECT name, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0) ORDER BY joined_at",
+                        (event_id,)
+                    ).fetchall()
+                    participants = [(r[0], r[1]) for r in rows]
+                    # Delegate announcement/update to announce_event
+                    try:
+                        announce_event(bot, event_service, event_id, participants=participants)
+                    except Exception:
+                        pass
                 except Exception:
                     traceback.print_exc()
                 # Get event info for confirmation message
