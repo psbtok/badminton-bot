@@ -91,10 +91,10 @@ def register_cancel_handlers(bot, event_service):
                 event_id = state.get("event_id")
                 name = state.get("name")
                 canceled_at = _dt.datetime.now(timezone.utc).isoformat()
-                try:
-                    event_service.cancel_registration(part_id, canceled_at)
-                except Exception:
-                    bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
+                
+                success = event_service.cancel_registration(part_id, canceled_at)
+                if not success:
+                    bot.edit_message_text(LOCALES["cancel_event_started"], chat_id, call.message.message_id)
                     return
 
                 try:

@@ -1,3 +1,5 @@
+import datetime as _dt
+from datetime import timezone
 from db_operations import DBOperations
 
 class EventService:
@@ -44,14 +46,18 @@ class EventService:
 
     def get_user_registrations(self, user_id):
         cur = self.db.cursor
+        now_utc = _dt.datetime.now(timezone.utc)
+        today_str = now_utc.strftime('%Y-%m-%d')
+        now_time_str = now_utc.strftime('%H:%M')
         cur.execute(
             """
             SELECT p.id, e.id, e.date, e.time_start, e.time_end, p.name
             FROM event_participants p
             JOIN events e ON p.event_id = e.id
             WHERE p.participant_id = ? AND (p.canceled IS NULL OR p.canceled = 0)
+            AND (e.date > ? OR (e.date = ? AND e.time_start > ?))
             """,
-            (user_id,)
+            (user_id, today_str, today_str, now_time_str)
         )
         return cur.fetchall()
 
@@ -70,11 +76,30 @@ class EventService:
 
     def cancel_registration(self, participant_id, canceled_at):
         cur = self.db.cursor
+        # Check if the event has already started
+        event_info = cur.execute("""
+            SELECT e.date, e.time_start
+            FROM events e
+            JOIN event_participants p ON e.id = p.event_id
+            WHERE p.id = ?
+        """, (participant_id,)).fetchone()
+
+        if event_info:
+            event_date_str, event_time_str = event_info
+            event_datetime = _dt.datetime.strptime(f"{event_date_str} {event_time_str}", "%Y-%m-%d %H:%M")
+            
+            # Make event_datetime timezone-aware (assuming UTC, adjust if different)
+            event_datetime = event_datetime.replace(tzinfo=timezone.utc)
+
+            if _dt.datetime.now(timezone.utc) > event_datetime:
+                return False  # Event has already started
+
         cur.execute(
             "UPDATE event_participants SET canceled = 1, canceled_at = ? WHERE id = ?",
             (canceled_at, participant_id)
         )
         self.db.conn.commit()
+        return True
 
     def get_event_participants(self, event_id):
         cur = self.db.cursor
@@ -84,9 +109,21 @@ class EventService:
         )
         return cur.fetchall()
 
-    def get_all_events(self):
+    def get_all_events(self, include_past=False):
         cur = self.db.cursor
-        cur.execute("SELECT id, date, time_start, time_end FROM events")
+        if include_past:
+            cur.execute("SELECT id, date, time_start, time_end FROM events ORDER BY date, time_start")
+        else:
+            now_utc = _dt.datetime.now(timezone.utc)
+            today_str = now_utc.strftime('%Y-%m-%d')
+            now_time_str = now_utc.strftime('%H:%M')
+            
+            cur.execute("""
+                SELECT id, date, time_start, time_end 
+                FROM events 
+                WHERE date > ? OR (date = ? AND time_start > ?)
+                ORDER BY date, time_start
+            """, (today_str, today_str, now_time_str))
         return cur.fetchall()
 
     def add_participant(self, event_id, user_id, name, joined_at):

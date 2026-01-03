@@ -42,4 +42,5 @@ LOCALES = {
     "cancel_success": "Ваша запись на {event_summary} была отменена.",
     "cancel_cancelled": "Отмена прервана.",
     "cancel_no_registrations": "У вас нет активных записей для отмены.",
+    "cancel_event_started": "Невозможно отменить запись, так как тренировка уже началась.",
 }
