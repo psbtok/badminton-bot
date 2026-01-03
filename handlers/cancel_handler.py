@@ -10,15 +10,7 @@ def register_cancel_handlers(bot, event_service):
     cancel_state = {}
     def get_user_registrations_not_canceled(user_id):
         # Return participant row id, event id, formatted event summary and participant name
-        rows = event_service.db.cursor.execute(
-            """
-            SELECT p.id, e.id, e.date, e.time_start, e.time_end, p.name
-            FROM event_participants p
-            JOIN events e ON p.event_id = e.id
-            WHERE p.participant_id = ? AND (p.canceled IS NULL OR p.canceled = 0)
-            """,
-            (user_id,)
-        ).fetchall()
+        rows = event_service.get_user_registrations(user_id)
         result = []
         for row in rows:
             part_id, event_id, date_str, time_start, time_end, name = row
@@ -57,17 +49,14 @@ def register_cancel_handlers(bot, event_service):
         if call.data.startswith("can_part_"):
             part_id = int(call.data[len("can_part_"):])
             # load participant row
-            prow = event_service.db.cursor.execute(
-                "SELECT id, event_id, name FROM event_participants WHERE id = ?",
-                (part_id,)
-            ).fetchone()
+            prow = event_service.get_participant(part_id)
             if not prow:
                 bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                 return
             _, event_id, name = prow
             cancel_state[user_id] = {"part_id": part_id, "event_id": event_id, "name": name}
             # show confirmation with name and event info
-            row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
+            row = event_service.get_event(event_id)
             if row:
                 date_str, time_start, time_end = row
                 try:
@@ -103,21 +92,14 @@ def register_cancel_handlers(bot, event_service):
                 name = state.get("name")
                 canceled_at = _dt.datetime.now(timezone.utc).isoformat()
                 try:
-                    event_service.db.cursor.execute(
-                        "UPDATE event_participants SET canceled = 1, canceled_at = ? WHERE id = ?",
-                        (canceled_at, part_id)
-                    )
-                    event_service.db.conn.commit()
+                    event_service.cancel_registration(part_id, canceled_at)
                 except Exception:
                     bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                     return
 
                 try:
                     # Build participants list (exclude canceled)
-                    rows = event_service.db.cursor.execute(
-                        "SELECT name, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0) ORDER BY joined_at",
-                        (event_id,)
-                    ).fetchall()
+                    rows = event_service.get_event_participants(event_id)
                     participants = [(r[0], r[1]) for r in rows]
                     try:
                         announce_event(bot, event_service, event_id, participants=participants)

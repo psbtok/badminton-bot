@@ -9,7 +9,7 @@ def register_register_handlers(bot, event_service):
     register_state = {}
 
     def get_all_trainings():
-        rows = event_service.db.cursor.execute("SELECT id, date, time_start, time_end FROM events").fetchall()
+        rows = event_service.get_all_events()
         result = []
         for row in rows:
             event_id, date_str, time_start, time_end = row
@@ -52,7 +52,7 @@ def register_register_handlers(bot, event_service):
             name = (user.first_name or "") + (" " + user.last_name if user.last_name else "")
             register_state[user_id]["name"] = name.strip()
             event_id = register_state[user_id]["event_id"]
-            row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
+            row = event_service.get_event(event_id)
             if not row:
                 bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                 return
@@ -87,19 +87,12 @@ def register_register_handlers(bot, event_service):
             state = register_state.pop(user_id, None)
             if state and "event_id" in state and "name" in state:
                 joined_at = _dt.datetime.now(timezone.utc).isoformat()
-                event_service.db.cursor.execute(
-                    "INSERT INTO event_participants (event_id, participant_id, name, joined_at) VALUES (?, ?, ?, ?)",
-                    (state["event_id"], user_id, state["name"], joined_at)
-                )
-                event_service.db.conn.commit()
+                event_service.add_participant(state["event_id"], user_id, state["name"], joined_at)
                 # Update announcement message in channel/thread with participants list
                 try:
                     event_id = state["event_id"]
                     # Build participants list
-                    rows = event_service.db.cursor.execute(
-                        "SELECT name, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0) ORDER BY joined_at",
-                        (event_id,)
-                    ).fetchall()
+                    rows = event_service.get_event_participants(event_id)
                     participants = [(r[0], r[1]) for r in rows]
                     # Delegate announcement/update to announce_event
                     try:
@@ -109,7 +102,7 @@ def register_register_handlers(bot, event_service):
                 except Exception:
                     traceback.print_exc()
                 # Get event info for confirmation message
-                row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (state["event_id"],)).fetchone()
+                row = event_service.get_event(state["event_id"])
                 if row:
                     date_str, time_start, time_end = row
                     dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
@@ -138,7 +131,7 @@ def register_register_handlers(bot, event_service):
             except Exception:
                 pass
         event_id = register_state[user_id]["event_id"]
-        row = event_service.db.cursor.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,)).fetchone()
+        row = event_service.get_event(event_id)
         if not row:
             bot.send_message(chat_id, LOCALES["error"])
             return
