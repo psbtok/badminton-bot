@@ -39,12 +39,12 @@ def register_cancel_handlers(bot, event_service):
         markup = types.InlineKeyboardMarkup()
         regs = get_user_registrations_not_canceled(user_id)
         if not regs:
-            bot.send_message(message.chat.id, LOCALES.get("no_events", "Событий не найдено."))
+            bot.send_message(message.chat.id, LOCALES["cancel_no_registrations"])
             return
         for part_id, event_id, display, name in regs:
             markup.add(types.InlineKeyboardButton(display, callback_data=f"can_part_{part_id}"))
         markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="can_cancel"))
-        bot.send_message(message.chat.id, LOCALES.get("register_select_training", "Выберите тренировку для регистрации:"), reply_markup=markup)
+        bot.send_message(message.chat.id, LOCALES["cancel_select_event"], reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith("can_part_") or call.data in ("can_cancel", "can_back", "can_confirm"))
     def handle_cancel_callback(call):
@@ -52,7 +52,7 @@ def register_cancel_handlers(bot, event_service):
         chat_id = call.message.chat.id
         if call.data == "can_cancel":
             cancel_state.pop(user_id, None)
-            bot.edit_message_text(LOCALES.get("register_cancelled", "Регистрация отменена."), chat_id, call.message.message_id)
+            bot.edit_message_text(LOCALES["cancel_cancelled"], chat_id, call.message.message_id)
             return
         if call.data.startswith("can_part_"):
             part_id = int(call.data[len("can_part_"):])
@@ -62,7 +62,7 @@ def register_cancel_handlers(bot, event_service):
                 (part_id,)
             ).fetchone()
             if not prow:
-                bot.edit_message_text(LOCALES.get("error", "Произошла ошибка. Пожалуйста, попробуйте снова."), chat_id, call.message.message_id)
+                bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                 return
             _, event_id, name = prow
             cancel_state[user_id] = {"part_id": part_id, "event_id": event_id, "name": name}
@@ -82,9 +82,9 @@ def register_cancel_handlers(bot, event_service):
             summary = f"{formatted_date} — {name}"
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(LOCALES.get("confirm", "Подтвердить"), callback_data="can_confirm"))
-            markup.add(types.InlineKeyboardButton(LOCALES.get("back", "Назад"), callback_data="can_back"))
-            markup.add(types.InlineKeyboardButton(LOCALES.get("cancel", "Отмена"), callback_data="can_cancel"))
-            bot.edit_message_text(LOCALES.get("register_check", "Проверьте данные и подтвердите регистрацию:\n{summary}").format(summary=summary), chat_id, call.message.message_id, reply_markup=markup)
+            markup.add(types.InlineKeyboardButton(LOCALES["back"], callback_data="can_back"))
+            markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="can_cancel"))
+            bot.edit_message_text(LOCALES["cancel_confirm"].format(event_summary=summary), chat_id, call.message.message_id, reply_markup=markup)
             return
         if call.data == "can_back":
             # Rebuild list of registrations
@@ -92,8 +92,8 @@ def register_cancel_handlers(bot, event_service):
             regs = get_user_registrations_not_canceled(user_id)
             for part_id, event_id, display, name in regs:
                 markup.add(types.InlineKeyboardButton(display, callback_data=f"can_part_{part_id}"))
-            markup.add(types.InlineKeyboardButton(LOCALES.get("cancel", "Отмена"), callback_data="can_cancel"))
-            bot.edit_message_text(LOCALES.get("register_select_training", "Выберите тренировку для регистрации:"), chat_id, call.message.message_id, reply_markup=markup)
+            markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="can_cancel"))
+            bot.edit_message_text(LOCALES["cancel_select_event"], chat_id, call.message.message_id, reply_markup=markup)
             return
         if call.data == "can_confirm":
             state = cancel_state.pop(user_id, None)
@@ -109,7 +109,7 @@ def register_cancel_handlers(bot, event_service):
                     )
                     event_service.db.conn.commit()
                 except Exception:
-                    bot.edit_message_text(LOCALES.get("error", "Произошла ошибка. Пожалуйста, попробуйте снова."), chat_id, call.message.message_id)
+                    bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                     return
 
                 try:
@@ -129,11 +129,11 @@ def register_cancel_handlers(bot, event_service):
                 # Confirmation message to user with the cancelled name
                 try:
                     if name:
-                        bot.edit_message_text(f"Отмена записи '{name}' выполнена.", chat_id, call.message.message_id)
+                        bot.edit_message_text(LOCALES["cancel_success"].format(event_summary=name), chat_id, call.message.message_id)
                     else:
-                        bot.edit_message_text(LOCALES.get("register_cancelled", "Регистрация отменена."), chat_id, call.message.message_id)
+                        bot.edit_message_text(LOCALES["cancel_cancelled"], chat_id, call.message.message_id)
                 except Exception:
-                    bot.edit_message_text(LOCALES.get("register_cancelled", "Регистрация отменена."), chat_id, call.message.message_id)
+                    bot.edit_message_text(LOCALES["cancel_cancelled"], chat_id, call.message.message_id)
             else:
-                bot.edit_message_text(LOCALES.get("error", "Произошла ошибка. Пожалуйста, попробуйте снова."), chat_id, call.message.message_id)
+                bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
             return
