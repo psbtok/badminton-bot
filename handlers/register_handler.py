@@ -51,6 +51,7 @@ def register_register_handlers(bot, event_service):
             user = call.from_user
             name = (user.first_name or "") + (" " + user.last_name if user.last_name else "")
             register_state[user_id]["name"] = name.strip()
+            register_state[user_id]["username"] = user.username
             event_id = register_state[user_id]["event_id"]
             row = event_service.get_event(event_id)
             if not row:
@@ -87,16 +88,16 @@ def register_register_handlers(bot, event_service):
             state = register_state.pop(user_id, None)
             if state and "event_id" in state and "name" in state:
                 joined_at = _dt.datetime.now(timezone.utc).isoformat()
-                event_service.add_participant(state["event_id"], user_id, state["name"], joined_at)
+                username = state.get("username")  # Can be None if entered manually
+                event_service.add_participant(state["event_id"], user_id, state["name"], username, joined_at)
                 # Update announcement message in channel/thread with participants list
                 try:
                     event_id = state["event_id"]
                     # Build participants list
                     rows = event_service.get_event_participants(event_id)
-                    participants = [(r[0], r[1]) for r in rows]
                     # Delegate announcement/update to announce_event
                     try:
-                        announce_event(bot, event_service, event_id, participants=participants)
+                        announce_event(bot, event_service, event_id, participants=rows)
                     except Exception:
                         pass
                 except Exception:
@@ -123,6 +124,7 @@ def register_register_handlers(bot, event_service):
             bot.send_message(chat_id, LOCALES["error"])
             return
         register_state[user_id]["name"] = message.text.strip()
+        register_state[user_id]["username"] = message.from_user.username
         # Remove buttons from the prompt message (if we saved it)
         prompt_msg_id = register_state[user_id].pop("prompt_message_id", None)
         if prompt_msg_id:

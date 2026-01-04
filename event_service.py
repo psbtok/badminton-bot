@@ -104,7 +104,15 @@ class EventService:
     def get_event_participants(self, event_id):
         cur = self.db.cursor
         cur.execute(
-            "SELECT name, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0) ORDER BY joined_at",
+            "SELECT name, username, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0) ORDER BY joined_at",
+            (event_id,)
+        )
+        return cur.fetchall()
+
+    def get_canceled_participants(self, event_id):
+        cur = self.db.cursor
+        cur.execute(
+            "SELECT name, username, canceled_at FROM event_participants WHERE event_id = ? AND canceled = 1 ORDER BY canceled_at",
             (event_id,)
         )
         return cur.fetchall()
@@ -126,10 +134,10 @@ class EventService:
             """, (today_str, today_str, now_time_str))
         return cur.fetchall()
 
-    def add_participant(self, event_id, user_id, name, joined_at):
+    def add_participant(self, event_id, user_id, name, username, joined_at):
         cur = self.db.cursor
         cur.execute(
-            "INSERT INTO event_participants (event_id, participant_id, name, joined_at) VALUES (?, ?, ?, ?)",
-            (event_id, user_id, name, joined_at)
+            "INSERT INTO event_participants (event_id, participant_id, name, username, joined_at) VALUES (?, ?, ?, ?, ?)",
+            (event_id, user_id, name, username, joined_at)
         )
         self.db.conn.commit()

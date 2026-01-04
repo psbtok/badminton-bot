@@ -98,22 +98,28 @@ def register_cancel_handlers(bot, event_service):
                     return
 
                 try:
-                    # Build participants list (exclude canceled)
-                    rows = event_service.get_event_participants(event_id)
-                    participants = [(r[0], r[1]) for r in rows]
-                    try:
-                        announce_event(bot, event_service, event_id, participants=participants)
-                    except Exception:
-                        pass
+                    if event_id:
+                        # Announce the change
+                        announce_event(bot, event_service, event_id)
                 except Exception:
                     traceback.print_exc()
 
-                # Confirmation message to user with the cancelled name
+                # Get event info for confirmation message
+                row = event_service.get_event(event_id)
+                if row:
+                    date_str, time_start, time_end = row
+                    try:
+                        dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
+                        month_name = LOCALES["month_names"][dt.month - 1]
+                        formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+                    except Exception:
+                        formatted_date = f"{date_str} {time_start}-{time_end}"
+                else:
+                    formatted_date = ""
+
+                summary = f"{formatted_date} — {name}"
                 try:
-                    if name:
-                        bot.edit_message_text(LOCALES["cancel_success"].format(event_summary=name), chat_id, call.message.message_id)
-                    else:
-                        bot.edit_message_text(LOCALES["cancel_cancelled"], chat_id, call.message.message_id)
+                    bot.edit_message_text(LOCALES["cancel_success"].format(event_summary=summary), chat_id, call.message.message_id)
                 except Exception:
                     bot.edit_message_text(LOCALES["cancel_cancelled"], chat_id, call.message.message_id)
             else:
