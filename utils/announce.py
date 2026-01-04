@@ -101,7 +101,7 @@ def _build_private_text(summary, participants, event_service, event_id):
         rows = event_service.get_canceled_participants(event_id)
         if rows:
             count = len(rows)
-            canceled_text = "\n\nОтменившиеся ({count}):\n".format(count=count)
+            canceled_text = "\nОтменившиеся ({count}):\n".format(count=count)
             for i, (n, username, canceled_at) in enumerate(rows, start=1):
                 try:
                     c_dt = _dt.datetime.fromisoformat(canceled_at)
