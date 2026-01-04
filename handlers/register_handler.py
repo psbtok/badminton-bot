@@ -87,7 +87,7 @@ def register_register_handlers(bot, event_service):
         if call.data == "reg_confirm":
             state = register_state.pop(user_id, None)
             if state and "event_id" in state and "name" in state:
-                joined_at = _dt.datetime.now(timezone.utc).isoformat()
+                joined_at = _dt.datetime.now().isoformat()
                 username = state.get("username")  # Can be None if entered manually
                 event_service.add_participant(state["event_id"], user_id, state["name"], username, joined_at)
                 # Update announcement message in channel/thread with participants list

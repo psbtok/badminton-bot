@@ -46,9 +46,9 @@ class EventService:
 
     def get_user_registrations(self, user_id):
         cur = self.db.cursor
-        now_utc = _dt.datetime.now(timezone.utc)
-        today_str = now_utc.strftime('%Y-%m-%d')
-        now_time_str = now_utc.strftime('%H:%M')
+        now = _dt.datetime.now()
+        today_str = now.strftime('%Y-%m-%d')
+        now_time_str = now.strftime('%H:%M')
         cur.execute(
             """
             SELECT p.id, e.id, e.date, e.time_start, e.time_end, p.name
@@ -88,10 +88,7 @@ class EventService:
             event_date_str, event_time_str = event_info
             event_datetime = _dt.datetime.strptime(f"{event_date_str} {event_time_str}", "%Y-%m-%d %H:%M")
             
-            # Make event_datetime timezone-aware (assuming UTC, adjust if different)
-            event_datetime = event_datetime.replace(tzinfo=timezone.utc)
-
-            if _dt.datetime.now(timezone.utc) > event_datetime:
+            if _dt.datetime.now() > event_datetime:
                 return False  # Event has already started
 
         cur.execute(
@@ -122,9 +119,9 @@ class EventService:
         if include_past:
             cur.execute("SELECT id, date, time_start, time_end FROM events ORDER BY date, time_start")
         else:
-            now_utc = _dt.datetime.now(timezone.utc)
-            today_str = now_utc.strftime('%Y-%m-%d')
-            now_time_str = now_utc.strftime('%H:%M')
+            now = _dt.datetime.now()
+            today_str = now.strftime('%Y-%m-%d')
+            now_time_str = now.strftime('%H:%M')
             
             cur.execute("""
                 SELECT id, date, time_start, time_end 
