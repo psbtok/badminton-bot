@@ -6,6 +6,7 @@ from event_service import EventService
 from db_operations import DBOperations
 from locales import LOCALES
 from handlers.cancel_handler import register_cancel_handlers
+from handlers.calendar_handler import register_calendar_handlers
 from handlers.register_handler import register_register_handlers
 
 # Load .env if present (simple loader, no extra dependency)
@@ -37,6 +38,7 @@ def handle_start(message):
 # Register event and registration handlers from handler modules
 register_register_handlers(bot, event_service)
 register_cancel_handlers(bot, event_service)
+register_calendar_handlers(bot, db_ops)
 
 
 # @bot.middleware_handler(update_types=['message'])

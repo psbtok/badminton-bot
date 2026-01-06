@@ -43,4 +43,22 @@ LOCALES = {
     "cancel_cancelled": "Отмена прервана.",
     "cancel_no_registrations": "У вас нет активных записей для отмены.",
     "cancel_event_started": "Невозможно отменить запись, так как тренировка уже началась.",
+    "calendar_no_upcoming_events": "Предстоящих тренировок нет.",
+    "calendar_upcoming_events": "Предстоящие тренировки:\n\n",
+    "calendar_your_upcoming_events": "Ваши предстоящие тренировки:\n\n",
+    "calendar_user_event_line": (
+        "{event_number}️⃣ {date}\n"
+        "⏰ {time_start}–{time_end}\n"
+        "🔗 [Ссылка]({public_link})\n\n"
+    ),
+    "calendar_admin_event_line": (
+        "{event_number}️⃣ {date}\n"
+        "⏰ {time_start}–{time_end}\n"
+        "👤 {participant_count} {person_word}\n"
+        "🔗 [Ссылка (общий чат)]({public_link})\n"
+        "🔗 [Ссылка (чат тренера)]({private_link})\n\n"
+    ),
+    "person_single": "человек",
+    "person_plural": "человека",
+    "person_plural_genitive": "человек",
 }

@@ -9,6 +9,7 @@ from event_service import EventService
 from handlers.cancel_handler import register_cancel_handlers
 from handlers.event_handler import register_event_handlers
 from handlers.register_handler import register_register_handlers
+from handlers.calendar_handler import register_calendar_handlers
 from migrate import run_migrations
 
 # Load .env if present
@@ -68,6 +69,7 @@ def handle_start(message):
 register_event_handlers(bot, event_service)
 register_register_handlers(bot, event_service)
 register_cancel_handlers(bot, event_service)
+register_calendar_handlers(bot, db_ops, is_admin=True)
 
 if __name__ == "__main__":
     print("Admin bot is running.")
