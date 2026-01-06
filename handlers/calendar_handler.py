@@ -1,13 +1,6 @@
 import os
 from locales import LOCALES
-
-def get_person_word(count):
-    if count % 10 == 1 and count % 100 != 11:
-        return LOCALES["person_single"]
-    elif 2 <= count % 10 <= 4 and (count % 100 < 10 or count % 100 >= 20):
-        return LOCALES["person_plural"]
-    else:
-        return LOCALES["person_plural_genitive"]
+from utils.text import get_person_word, format_date_for_calendar
 
 def register_calendar_handlers(bot, db_ops, is_admin=False):
     @bot.message_handler(commands=['calendar'])
@@ -21,7 +14,7 @@ def register_calendar_handlers(bot, db_ops, is_admin=False):
             
             response = LOCALES["calendar_upcoming_events"]
             for i, event in enumerate(events, 1):
-                date, time_start, time_end, _, private_message_id, announce_message_id, participant_count = event
+                date, time_start, time_end, _, private_message_id, announce_message_id, participant_count, max_participants = event
                 
                 private_chat_id = os.environ.get('PRIVATE_CHAT_ID', '').replace('-100', '')
                 public_chat_id = os.environ.get('PUBLIC_CHAT_ID', '').replace('-100', '')
@@ -30,14 +23,15 @@ def register_calendar_handlers(bot, db_ops, is_admin=False):
                 private_link = f"https://t.me/c/{private_chat_id}/{private_message_id}" if private_message_id and private_chat_id else ""
                 public_link = f"https://t.me/c/{public_chat_id}/{announce_message_id}" if announce_message_id and public_chat_id else ""
 
-                person_word = get_person_word(participant_count)
+                person_word = get_person_word(max_participants)
 
                 response += LOCALES["calendar_admin_event_line"].format(
                     event_number=i,
-                    date=date, 
+                    date=format_date_for_calendar(date), 
                     time_start=time_start, 
                     time_end=time_end, 
                     participant_count=participant_count,
+                    max_participants=max_participants,
                     person_word=person_word,
                     private_link=private_link,
                     public_link=public_link
@@ -55,7 +49,7 @@ def register_calendar_handlers(bot, db_ops, is_admin=False):
                 public_link = f"https://t.me/c/{public_chat_id}/{announce_message_id}" if announce_message_id and public_chat_id else ""
                 response += LOCALES["calendar_user_event_line"].format(
                     event_number=i,
-                    date=date, 
+                    date=format_date_for_calendar(date), 
                     time_start=time_start, 
                     time_end=time_end,
                     public_link=public_link

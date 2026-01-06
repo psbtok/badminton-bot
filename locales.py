@@ -52,13 +52,13 @@ LOCALES = {
         "🔗 [Ссылка]({public_link})\n\n"
     ),
     "calendar_admin_event_line": (
-        "{event_number}️⃣ {date}\n"
-        "⏰ {time_start}–{time_end}\n"
-        "👤 {participant_count} {person_word}\n"
+        "{date} c {time_start} до {time_end} \n"
+        "👤 {participant_count}/{max_participants} {person_word}\n"
         "🔗 [Ссылка (общий чат)]({public_link})\n"
         "🔗 [Ссылка (чат тренера)]({private_link})\n\n"
     ),
     "person_single": "человек",
     "person_plural": "человека",
     "person_plural_genitive": "человек",
+    "register_event_full": "Извините, на эту тренировку уже нет мест.",
 }

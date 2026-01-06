@@ -12,11 +12,16 @@ def register_register_handlers(bot, event_service):
         rows = event_service.get_all_events()
         result = []
         for row in rows:
-            event_id, date_str, time_start, time_end = row
+            event_id, date_str, time_start, time_end, max_participants, current_participants = row
             dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
             formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
-            result.append((event_id, formatted_date))
+            
+            is_full = max_participants is not None and current_participants >= max_participants
+            if is_full:
+                formatted_date += " (мест нет)"
+
+            result.append((event_id, formatted_date, is_full))
         return result
 
     @bot.message_handler(commands=['register'])
@@ -24,8 +29,11 @@ def register_register_handlers(bot, event_service):
         user_id = message.from_user.id
         register_state[user_id] = {}
         markup = types.InlineKeyboardMarkup()
-        for event_id, summary in get_all_trainings():
-            markup.add(types.InlineKeyboardButton(summary, callback_data=f"reg_event_{event_id}"))
+        for event_id, summary, is_full in get_all_trainings():
+            btn = types.InlineKeyboardButton(summary, callback_data=f"reg_event_{event_id}")
+            if is_full:
+                btn.callback_data = "reg_event_full"
+            markup.add(btn)
         markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="reg_cancel"))
         bot.send_message(message.chat.id, LOCALES["register_select_training"], reply_markup=markup)
 
@@ -37,8 +45,23 @@ def register_register_handlers(bot, event_service):
             register_state.pop(user_id, None)
             bot.edit_message_text(LOCALES["register_cancelled"], chat_id, call.message.message_id)
             return
+        if call.data == "reg_event_full":
+            bot.answer_callback_query(call.id, LOCALES["register_event_full"], show_alert=True)
+            return
         if call.data.startswith("reg_event_"):
             event_id = int(call.data[len("reg_event_"):])
+            
+            # Check if event is full
+            event_data = next((e for e in event_service.get_all_events() if e[0] == event_id), None)
+            if event_data:
+                _, _, _, _, max_participants, current_participants = event_data
+                if max_participants is not None and current_participants >= max_participants:
+                    bot.answer_callback_query(call.id, LOCALES["register_event_full"], show_alert=True)
+                    return
+            else: # Should not happen if button was just pressed, but as a safeguard
+                bot.answer_callback_query(call.id, LOCALES["error"], show_alert=True)
+                return
+
             register_state[user_id] = {"event_id": event_id}
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(LOCALES["register_use_tg_name"], callback_data="reg_use_tg_name"))
@@ -57,7 +80,7 @@ def register_register_handlers(bot, event_service):
             if not row:
                 bot.edit_message_text(LOCALES["error"], chat_id, call.message.message_id)
                 return
-            date_str, time_start, time_end = row
+            date_str, time_start, time_end, _ = row
             dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
             formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
@@ -79,8 +102,11 @@ def register_register_handlers(bot, event_service):
             return
         if call.data == "reg_back":
             markup = types.InlineKeyboardMarkup()
-            for event_id, summary in get_all_trainings():
-                markup.add(types.InlineKeyboardButton(summary, callback_data=f"reg_event_{event_id}"))
+            for event_id, summary, is_full in get_all_trainings():
+                btn = types.InlineKeyboardButton(summary, callback_data=f"reg_event_{event_id}")
+                if is_full:
+                    btn.callback_data = "reg_event_full"
+                markup.add(btn)
             markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="reg_cancel"))
             bot.edit_message_text(LOCALES["register_select_training"], chat_id, call.message.message_id, reply_markup=markup)
             return
@@ -105,7 +131,7 @@ def register_register_handlers(bot, event_service):
                 # Get event info for confirmation message
                 row = event_service.get_event(state["event_id"])
                 if row:
-                    date_str, time_start, time_end = row
+                    date_str, time_start, time_end, _ = row
                     dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                     month_name = LOCALES["month_names"][dt.month - 1]
                     formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
@@ -137,7 +163,7 @@ def register_register_handlers(bot, event_service):
         if not row:
             bot.send_message(chat_id, LOCALES["error"])
             return
-        date_str, time_start, time_end = row
+        date_str, time_start, time_end, _ = row
         dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
         month_name = LOCALES["month_names"][dt.month - 1]
         formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"

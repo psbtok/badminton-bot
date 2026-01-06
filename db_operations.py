@@ -25,14 +25,15 @@ class DBOperations:
                 SELECT e.date, e.time_start, e.time_end, e.id, e.announce_message_id
                 FROM events e
                 JOIN event_participants ep ON e.id = ep.event_id
-                WHERE ep.participant_id = ? AND (e.date || ' ' || e.time_start) >= ?
+                WHERE ep.participant_id = ? AND (ep.canceled IS NULL OR ep.canceled = 0) AND (e.date || ' ' || e.time_start) >= ?
                 ORDER BY e.date, e.time_start
             """
             self.cursor.execute(query, (participant_id, today_start))
         else:
             query = """
                 SELECT e.date, e.time_start, e.time_end, e.id, e.private_message_id, e.announce_message_id,
-                       (SELECT COUNT(id) FROM event_participants WHERE event_id = e.id) as participant_count
+                       (SELECT COUNT(id) FROM event_participants WHERE event_id = e.id AND (canceled IS NULL OR canceled = 0)) as participant_count,
+                       e.max_participants
                 FROM events e
                 WHERE (e.date || ' ' || e.time_start) >= ?
                 ORDER BY e.date, e.time_start
@@ -47,7 +48,8 @@ class DBOperations:
                 date TEXT NOT NULL,
                 time_start TEXT NOT NULL,
                 time_end TEXT NOT NULL,
-                creator INTEGER NOT NULL
+                creator INTEGER NOT NULL,
+                max_participants INTEGER
             )
         ''')
         self.cursor.execute('''

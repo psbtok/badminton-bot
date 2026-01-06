@@ -12,11 +12,11 @@ class EventService:
     def close(self):
         self.db.close()
 
-    def create_event(self, date, time_start, time_end, creator_id):
+    def create_event(self, date, time_start, time_end, creator_id, max_participants=None):
         cur = self.db.cursor
         cur.execute(
-            "INSERT INTO events (date, time_start, time_end, creator) VALUES (?, ?, ?, ?)",
-            (date, time_start, time_end, creator_id)
+            "INSERT INTO events (date, time_start, time_end, creator, max_participants) VALUES (?, ?, ?, ?, ?)",
+            (date, time_start, time_end, creator_id, max_participants)
         )
         self.db.conn.commit()
         return cur.lastrowid
@@ -71,7 +71,7 @@ class EventService:
 
     def get_event(self, event_id):
         cur = self.db.cursor
-        cur.execute("SELECT date, time_start, time_end FROM events WHERE id = ?", (event_id,))
+        cur.execute("SELECT date, time_start, time_end, max_participants FROM events WHERE id = ?", (event_id,))
         return cur.fetchone()
 
     def cancel_registration(self, participant_id, canceled_at):
@@ -117,14 +117,14 @@ class EventService:
     def get_all_events(self, include_past=False):
         cur = self.db.cursor
         if include_past:
-            cur.execute("SELECT id, date, time_start, time_end FROM events ORDER BY date, time_start")
+            cur.execute("SELECT id, date, time_start, time_end, max_participants, (SELECT COUNT(*) FROM event_participants WHERE event_id = events.id AND (canceled IS NULL OR canceled = 0)) as current_participants FROM events ORDER BY date, time_start")
         else:
             now = _dt.datetime.now()
             today_str = now.strftime('%Y-%m-%d')
             now_time_str = now.strftime('%H:%M')
             
             cur.execute("""
-                SELECT id, date, time_start, time_end 
+                SELECT id, date, time_start, time_end, max_participants, (SELECT COUNT(*) FROM event_participants WHERE event_id = events.id AND (canceled IS NULL OR canceled = 0)) as current_participants
                 FROM events 
                 WHERE date > ? OR (date = ? AND time_start > ?)
                 ORDER BY date, time_start

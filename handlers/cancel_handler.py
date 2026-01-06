@@ -58,7 +58,7 @@ def register_cancel_handlers(bot, event_service):
             # show confirmation with name and event info
             row = event_service.get_event(event_id)
             if row:
-                date_str, time_start, time_end = row
+                date_str, time_start, time_end, _ = row
                 try:
                     dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                     month_name = LOCALES["month_names"][dt.month - 1]
@@ -107,7 +107,7 @@ def register_cancel_handlers(bot, event_service):
                 # Get event info for confirmation message
                 row = event_service.get_event(event_id)
                 if row:
-                    date_str, time_start, time_end = row
+                    date_str, time_start, time_end, _ = row
                     try:
                         dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                         month_name = LOCALES["month_names"][dt.month - 1]

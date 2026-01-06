@@ -2,6 +2,7 @@ from locales import LOCALES
 import datetime as _dt
 import requests
 import os
+from utils.text import get_person_word
 
 
 def _send_public_announcement(bot, event_service, event_id, public_text):
@@ -50,9 +51,12 @@ def _send_private_announcement(bot, event_service, event_id, private_text):
     except Exception:
         return None, False
 
-def _build_public_text(summary, participants):
+def _build_public_text(summary, participants, max_participants=None):
     """Builds the announcement text for the public channel."""
     announce_text = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
+    if max_participants:
+        person_word = get_person_word(max_participants)
+        announce_text += f"\nЛимит участников - {max_participants} {person_word}"
 
     parts_text = ""
     if participants:
@@ -73,9 +77,12 @@ def _build_public_text(summary, participants):
     
     return announce_text + parts_text
 
-def _build_private_text(summary, participants, event_service, event_id):
+def _build_private_text(summary, participants, event_service, event_id, max_participants=None):
     """Builds the announcement text for the private channel."""
     announce_text = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
+    if max_participants:
+        person_word = get_person_word(max_participants)
+        announce_text += f"\nЛимит участников - {max_participants} {person_word}"
 
     parts_text = ""
     if participants:
@@ -121,13 +128,13 @@ def _build_private_text(summary, participants, event_service, event_id):
 
     return announce_text + parts_text + canceled_text
 
-def announce_event(bot, event_service, event_id, date_str=None, time_start=None, time_end=None, participants=None):
+def announce_event(bot, event_service, event_id, date_str=None, time_start=None, time_end=None, participants=None, max_participants=None):
 	# Ensure we have event date/time; fetch if not provided
 	try:
 		if date_str is None or time_start is None or time_end is None:
 			row = event_service.get_event(event_id)
 			if row:
-				date_str, time_start, time_end = row
+				date_str, time_start, time_end, max_participants = row
 	except Exception:
 		return False
 
@@ -159,8 +166,8 @@ def announce_event(bot, event_service, event_id, date_str=None, time_start=None,
 	if participants is None:
 		participants = event_service.get_event_participants(event_id)
 
-	public_text = _build_public_text(summary, participants)
-	private_text = _build_private_text(summary, participants, event_service, event_id)
+	public_text = _build_public_text(summary, participants, max_participants)
+	private_text = _build_private_text(summary, participants, event_service, event_id, max_participants)
 	print("Public Announcement Text:\n", public_text)
 	new_public_id, public_success = _send_public_announcement(bot, event_service, event_id, public_text)
 	new_private_id, private_success = _send_private_announcement(bot, event_service, event_id, private_text)
