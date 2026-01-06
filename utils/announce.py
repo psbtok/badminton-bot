@@ -75,7 +75,12 @@ def _build_public_text(summary, participants, max_participants=None):
                 date_part = "?"
             parts_text += f"{i}. {n} ({date_part} в {time_str})\n"
     
-    return announce_text + parts_text
+    footer = ''
+    bot_username = os.environ.get("BOT_USERNAME")
+    if bot_username:
+        footer = f"\nЗаписаться можно тут @{bot_username}"
+
+    return announce_text + parts_text + footer
 
 def _build_private_text(summary, participants, event_service, event_id, max_participants=None):
     """Builds the announcement text for the private channel."""
