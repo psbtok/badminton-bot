@@ -11,8 +11,8 @@ from handlers.event_handler import register_event_handlers
 from handlers.register_handler import register_register_handlers
 from handlers.calendar_handler import register_calendar_handlers
 from handlers.cancel_training_handler import register_cancel_training_handlers
-from migrate import run_migrations
-import os
+from scripts.migrate import run_migrations
+
 
 # Load .env if present
 env_path = Path(__file__).parent / '.env'
