@@ -18,3 +18,13 @@ def get_person_word(count):
         return LOCALES["person_plural"]
     else:
         return LOCALES["person_plural_genitive"]
+
+def format_event_for_selection(event):
+    date, time_start, _, _, _, _, participant_count, max_participants = event
+    formatted_date = format_date_for_calendar(date)
+    return f"{formatted_date} {time_start} ({participant_count}/{max_participants})"
+
+def format_event_summary(event):
+    """Formats a simple summary for an event object."""
+    formatted_date = format_date_for_calendar(event.date)
+    return f"{formatted_date} с {event.time_start} до {event.time_end}"

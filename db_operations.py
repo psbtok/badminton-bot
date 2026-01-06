@@ -25,7 +25,7 @@ class DBOperations:
                 SELECT e.date, e.time_start, e.time_end, e.id, e.announce_message_id
                 FROM events e
                 JOIN event_participants ep ON e.id = ep.event_id
-                WHERE ep.participant_id = ? AND (ep.canceled IS NULL OR ep.canceled = 0) AND (e.date || ' ' || e.time_start) >= ?
+                WHERE ep.participant_id = ? AND (ep.canceled IS NULL OR ep.canceled = 0) AND (e.date || ' ' || e.time_start) >= ? AND (e.canceled IS NULL OR e.canceled = 0)
                 ORDER BY e.date, e.time_start
             """
             self.cursor.execute(query, (participant_id, today_start))
@@ -35,10 +35,23 @@ class DBOperations:
                        (SELECT COUNT(id) FROM event_participants WHERE event_id = e.id AND (canceled IS NULL OR canceled = 0)) as participant_count,
                        e.max_participants
                 FROM events e
-                WHERE (e.date || ' ' || e.time_start) >= ?
+                WHERE (e.date || ' ' || e.time_start) >= ? AND (e.canceled IS NULL OR e.canceled = 0)
                 ORDER BY e.date, e.time_start
             """
             self.cursor.execute(query, (today_start,))
+        return self.cursor.fetchall()
+
+    def get_future_events(self):
+        today_start = datetime.now().strftime('%Y-%m-%d 00:00')
+        query = """
+            SELECT e.date, e.time_start, e.time_end, e.id, e.private_message_id, e.announce_message_id,
+                   (SELECT COUNT(id) FROM event_participants WHERE event_id = e.id AND (canceled IS NULL OR canceled = 0)) as participant_count,
+                   e.max_participants
+            FROM events e
+            WHERE (e.date || ' ' || e.time_start) >= ? AND (e.canceled IS NULL OR e.canceled = 0)
+            ORDER BY e.date, e.time_start
+        """
+        self.cursor.execute(query, (today_start,))
         return self.cursor.fetchall()
 
     def create_tables_if_not_exist(self):
@@ -61,6 +74,10 @@ class DBOperations:
                 FOREIGN KEY(event_id) REFERENCES events(id)
             )
         ''')
+        self.conn.commit()
+
+    def cancel_event(self, event_id):
+        self.cursor.execute("UPDATE events SET canceled = 1 WHERE id = ?", (event_id,))
         self.conn.commit()
 
     def close(self):

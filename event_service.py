@@ -56,6 +56,7 @@ class EventService:
             JOIN events e ON p.event_id = e.id
             WHERE p.participant_id = ? AND (p.canceled IS NULL OR p.canceled = 0)
             AND (e.date > ? OR (e.date = ? AND e.time_start > ?))
+            AND (e.canceled IS NULL OR e.canceled = 0)
             """,
             (user_id, today_str, today_str, now_time_str)
         )
@@ -100,10 +101,7 @@ class EventService:
 
     def get_event_participants(self, event_id):
         cur = self.db.cursor
-        cur.execute(
-            "SELECT name, username, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0) ORDER BY joined_at",
-            (event_id,)
-        )
+        cur.execute("SELECT name, username, joined_at FROM event_participants WHERE event_id = ? AND (canceled IS NULL OR canceled = 0)", (event_id,))
         return cur.fetchall()
 
     def get_canceled_participants(self, event_id):
@@ -126,7 +124,7 @@ class EventService:
             cur.execute("""
                 SELECT id, date, time_start, time_end, max_participants, (SELECT COUNT(*) FROM event_participants WHERE event_id = events.id AND (canceled IS NULL OR canceled = 0)) as current_participants
                 FROM events 
-                WHERE date > ? OR (date = ? AND time_start > ?)
+                WHERE (date > ? OR (date = ? AND time_start > ?)) AND (canceled IS NULL OR canceled = 0)
                 ORDER BY date, time_start
             """, (today_str, today_str, now_time_str))
         return cur.fetchall()
@@ -138,3 +136,13 @@ class EventService:
             (event_id, user_id, name, username, joined_at)
         )
         self.db.conn.commit()
+
+    def get_event_by_id(self, event_id):
+        cur = self.db.cursor
+        cur.execute("SELECT id, date, time_start, time_end, creator, max_participants, announce_message_id, private_message_id, canceled FROM events WHERE id = ?", (event_id,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        
+        from models import Event # Import here to avoid circular dependency
+        return Event(*row)

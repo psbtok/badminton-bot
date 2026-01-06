@@ -20,7 +20,7 @@ def register_event_handlers(bot, event_service):
     def get_time_buttons():
         return [(f"{hour}:00", str(hour)) for hour in range(10, 21)]
 
-    @bot.message_handler(commands=['create'])
+    @bot.message_handler(commands=['event_create'])
     def handle_create_event(message):
         user_id = message.from_user.id
         user_event_state[user_id] = {}

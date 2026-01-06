@@ -173,7 +173,6 @@ def announce_event(bot, event_service, event_id, date_str=None, time_start=None,
 
 	public_text = _build_public_text(summary, participants, max_participants)
 	private_text = _build_private_text(summary, participants, event_service, event_id, max_participants)
-	print("Public Announcement Text:\n", public_text)
 	new_public_id, public_success = _send_public_announcement(bot, event_service, event_id, public_text)
 	new_private_id, private_success = _send_private_announcement(bot, event_service, event_id, private_text)
 

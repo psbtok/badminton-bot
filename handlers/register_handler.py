@@ -27,9 +27,14 @@ def register_register_handlers(bot, event_service):
     @bot.message_handler(commands=['register'])
     def handle_register(message):
         user_id = message.from_user.id
+        trainings = get_all_trainings()
+        if not trainings:
+            bot.reply_to(message, LOCALES["calendar_no_upcoming_events"])
+            return
+
         register_state[user_id] = {}
         markup = types.InlineKeyboardMarkup()
-        for event_id, summary, is_full in get_all_trainings():
+        for event_id, summary, is_full in trainings:
             btn = types.InlineKeyboardButton(summary, callback_data=f"reg_event_{event_id}")
             if is_full:
                 btn.callback_data = "reg_event_full"
@@ -123,9 +128,12 @@ def register_register_handlers(bot, event_service):
                     rows = event_service.get_event_participants(event_id)
                     # Delegate announcement/update to announce_event
                     try:
-                        announce_event(bot, event_service, event_id, participants=rows)
+                        event_row = event_service.get_event(event_id)
+                        max_participants = event_row[3] if event_row else None
+                        announce_event(bot, event_service, event_id, participants=rows, max_participants=max_participants)
                     except Exception:
-                        pass
+                        traceback.print_exc()
+                        print("Failed to announce updated participant list.")
                 except Exception:
                     traceback.print_exc()
                 # Get event info for confirmation message
