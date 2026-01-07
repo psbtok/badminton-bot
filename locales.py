@@ -47,7 +47,9 @@ LOCALES = {
     "calendar_upcoming_events": "Предстоящие тренировки:\n\n",
     "calendar_your_upcoming_events": "Ваши предстоящие тренировки:\n\n",
     "calendar_user_event_line": (
-        "{date} с {time_start} до {time_end} 🔗 [Ссылка]({public_link})\n\n"
+        "{date} с {time_start} до {time_end} — {name}\n"
+        "👤 {participant_count}/{max_participants} {person_word}\n"
+        "🔗 [Ссылка]({public_link})\n\n"
     ),
     "calendar_admin_event_line": (
         "{date} c {time_start} до {time_end} \n"
@@ -78,4 +80,13 @@ LOCALES = {
         "Информация о следующей тренировке появится в этом канале."
     ),
     "training_cancelled_reply": "К сожалению, тренировка была отменена",
+    "event_summary_with_time": "{date} с {start_time} до {end_time}",
+    "channel_announce": "Объявляется тренировка:\n{summary}",
+    "event_summary_with_time_and_date": "{date} с {start_time} до {end_time}",
+    "participant_limit": "\nЛимит участников - {max_participants} {person_word}",
+    "participants_header": "\n\nУчастники ({count}):\n",
+    "participant_entry": "{i}. {n} ({date_part} в {time_str})\n",
+    "participant_entry_private": "{i}. {n} {user_tag} ({date_part} в {time_str})\n",
+    "registration_footer": "\nЗаписаться можно тут @{bot_username}",
+    "canceled_participants_header": "\nОтменившиеся ({count}):\n",
 }

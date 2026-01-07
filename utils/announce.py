@@ -53,15 +53,15 @@ def _send_private_announcement(bot, event_service, event_id, private_text):
 
 def _build_public_text(summary, participants, max_participants=None):
     """Builds the announcement text for the public channel."""
-    announce_text = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
+    announce_text = LOCALES.get("channel_announce").format(summary=summary)
     if max_participants:
         person_word = get_person_word(max_participants)
-        announce_text += f"\nЛимит участников - {max_participants} {person_word}"
+        announce_text += LOCALES["participant_limit"].format(max_participants=max_participants, person_word=person_word)
 
     parts_text = ""
     if participants:
         count = len(participants)
-        parts_text = "\n\nУчастники ({count}):\n".format(count=count)
+        parts_text = LOCALES["participants_header"].format(count=count)
         for i, (n, _, joined) in enumerate(participants, start=1):
             try:
                 joined_dt = _dt.datetime.fromisoformat(joined)
@@ -73,26 +73,26 @@ def _build_public_text(summary, participants, max_participants=None):
             except Exception:
                 time_str = "?"
                 date_part = "?"
-            parts_text += f"{i}. {n} ({date_part} в {time_str})\n"
+            parts_text += LOCALES["participant_entry"].format(i=i, n=n, date_part=date_part, time_str=time_str)
     
     footer = ''
     bot_username = os.environ.get("BOT_USERNAME")
     if bot_username:
-        footer = f"\nЗаписаться можно тут @{bot_username}"
+        footer = LOCALES["registration_footer"].format(bot_username=bot_username)
 
     return announce_text + parts_text + footer
 
 def _build_private_text(summary, participants, event_service, event_id, max_participants=None):
     """Builds the announcement text for the private channel."""
-    announce_text = LOCALES.get("channel_announce", "Объявляется тренировка:\n{summary}").format(summary=summary)
+    announce_text = LOCALES.get("channel_announce").format(summary=summary)
     if max_participants:
         person_word = get_person_word(max_participants)
-        announce_text += f"\nЛимит участников - {max_participants} {person_word}"
+        announce_text += LOCALES["participant_limit"].format(max_participants=max_participants, person_word=person_word)
 
     parts_text = ""
     if participants:
         count = len(participants)
-        parts_text = "\n\nУчастники ({count}):\n".format(count=count)
+        parts_text = LOCALES["participants_header"].format(count=count)
         for i, (n, username, joined) in enumerate(participants, start=1):
             try:
                 joined_dt = _dt.datetime.fromisoformat(joined)
@@ -106,14 +106,14 @@ def _build_private_text(summary, participants, event_service, event_id, max_part
                 date_part = "?"
 
             user_tag = f"@{username}" if username else ""
-            parts_text += f"{i}. {n} {user_tag} ({date_part} в {time_str})\n"
+            parts_text += LOCALES["participant_entry_private"].format(i=i, n=n, user_tag=user_tag, date_part=date_part, time_str=time_str)
 
     canceled_text = ""
     try:
         rows = event_service.get_canceled_participants(event_id)
         if rows:
             count = len(rows)
-            canceled_text = "\nОтменившиеся ({count}):\n".format(count=count)
+            canceled_text = LOCALES["canceled_participants_header"].format(count=count)
             for i, (n, username, canceled_at) in enumerate(rows, start=1):
                 try:
                     c_dt = _dt.datetime.fromisoformat(canceled_at)
@@ -127,7 +127,7 @@ def _build_private_text(summary, participants, event_service, event_id, max_part
                     date_part = "?"
 
                 user_tag = f"@{username}" if username else ""
-                canceled_text += f"{i}. {n} {user_tag} ({date_part} в {time_str})\n"
+                canceled_text += LOCALES["participant_entry_private"].format(i=i, n=n, user_tag=user_tag, date_part=date_part, time_str=time_str)
     except Exception:
         canceled_text = ""
 
@@ -164,7 +164,7 @@ def announce_event(bot, event_service, event_id, date_str=None, time_start=None,
 			te = None
 
 	if ts is not None and te is not None:
-		summary = f"{formatted_date} с {ts:02d}:00 до {te:02d}:00"
+		summary = LOCALES["event_summary_with_time_and_date"].format(date=formatted_date, start_time=f"{ts:02d}:00", end_time=f"{te:02d}:00")
 	else:
 		summary = f"{formatted_date} {time_start} - {time_end}"
 

@@ -27,4 +27,4 @@ def format_event_for_selection(event):
 def format_event_summary(event):
     """Formats a simple summary for an event object."""
     formatted_date = format_date_for_calendar(event.date)
-    return f"{formatted_date} с {event.time_start} до {event.time_end}"
+    return LOCALES["event_summary_with_time"].format(date=formatted_date, start_time=event.time_start, end_time=event.time_end)

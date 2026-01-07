@@ -22,7 +22,10 @@ class DBOperations:
         today_start = datetime.now().strftime('%Y-%m-%d 00:00')
         if participant_id:
             query = """
-                SELECT e.date, e.time_start, e.time_end, e.id, e.announce_message_id
+                SELECT e.date, e.time_start, e.time_end, e.id, e.announce_message_id,
+                       (SELECT COUNT(id) FROM event_participants WHERE event_id = e.id AND (canceled IS NULL OR canceled = 0)) as participant_count,
+                       e.max_participants,
+                       ep.name
                 FROM events e
                 JOIN event_participants ep ON e.id = ep.event_id
                 WHERE ep.participant_id = ? AND (ep.canceled IS NULL OR ep.canceled = 0) AND (e.date || ' ' || e.time_start) >= ? AND (e.canceled IS NULL OR e.canceled = 0)
