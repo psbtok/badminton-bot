@@ -1,13 +1,13 @@
 import os
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from db_operations import DBOperations
+from event_service import EventService
 from utils.text import format_event_for_selection, format_event_summary, format_date_for_calendar
 from locales import LOCALES
 
 (SELECT_EVENT, CONFIRM_CANCEL) = range(2)
 
 def register_cancel_training_handlers(bot, event_service):
-    db_ops = DBOperations()
+    db_ops = EventService()
 
     @bot.message_handler(commands=['event_cancel'])
     def cancel_training_start(message):
