@@ -1,6 +1,6 @@
 import os
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from event_service import EventService
+from services.event_service import EventService
 from utils.text import format_event_for_selection, format_event_summary, format_date_for_calendar
 from locales import LOCALES
 

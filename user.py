@@ -2,8 +2,7 @@ import os
 from pathlib import Path
 import telebot
 
-from event_service import EventService
-from event_service import EventService
+from services.event_service import EventService
 from locales import LOCALES
 from handlers.cancel_handler import register_cancel_handlers
 from handlers.calendar_handler import register_calendar_handlers

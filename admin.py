@@ -3,9 +3,8 @@ from pathlib import Path
 import telebot
 from telebot import apihelper
 
-from event_service import EventService
+from services.event_service import EventService
 from locales import LOCALES
-from event_service import EventService
 from handlers.cancel_handler import register_cancel_handlers
 from handlers.event_handler import register_event_handlers
 from handlers.register_handler import register_register_handlers
