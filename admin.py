@@ -3,7 +3,7 @@ from pathlib import Path
 import telebot
 from telebot import apihelper
 
-from db_operations import DBOperations
+from event_service import EventService
 from locales import LOCALES
 from event_service import EventService
 from handlers.cancel_handler import register_cancel_handlers
@@ -37,7 +37,7 @@ apihelper.ENABLE_MIDDLEWARE = True
 token = os.environ.get('ADMIN_BOT_API_KEY')
 bot = telebot.TeleBot(token)
 event_service = EventService()
-db_ops = DBOperations()
+db_ops = EventService()
 
 
 # --------------------------

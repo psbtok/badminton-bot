@@ -3,7 +3,7 @@ from pathlib import Path
 import telebot
 
 from event_service import EventService
-from db_operations import DBOperations
+from event_service import EventService
 from locales import LOCALES
 from handlers.cancel_handler import register_cancel_handlers
 from handlers.calendar_handler import register_calendar_handlers
@@ -27,7 +27,7 @@ if env_path.exists():
 token = os.environ.get('USER_BOT_API_KEY')
 bot = telebot.TeleBot(token)
 event_service = EventService()
-db_ops = DBOperations()
+db_ops = EventService()
 
 # Migrations will be run when a user issues /start to ensure environment is ready
 
