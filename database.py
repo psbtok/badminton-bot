@@ -4,9 +4,19 @@ import os
 class Database:
     _instance = None
 
-    def __new__(cls, db_path='events.db'):
+    def __new__(cls, db_path=None):
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls)
+            
+            if db_path is None:
+                # Default to data/events.db and respect environment variable
+                db_path = os.environ.get('DB_PATH', 'data/events.db')
+            
+            # Ensure the directory for the database exists
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir)
+
             cls._instance.db_path = db_path
             cls._instance.conn = sqlite3.connect(cls._instance.db_path, check_same_thread=False)
             cls._instance.conn.row_factory = sqlite3.Row

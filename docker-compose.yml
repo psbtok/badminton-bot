@@ -7,6 +7,8 @@ services:
     restart: always
     env_file:
       - .env
+    volumes:
+      - ./data:/app/data
 
   user:
     build: .
@@ -14,3 +16,5 @@ services:
     restart: always
     env_file:
       - .env
+    volumes:
+      - ./data:/app/data
