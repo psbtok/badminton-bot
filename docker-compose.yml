@@ -5,8 +5,12 @@ services:
     build: .
     command: ["python", "admin.py"]
     restart: always
+    env_file:
+      - .env
 
   user:
     build: .
     command: ["python", "user.py"]
     restart: always
+    env_file:
+      - .env
