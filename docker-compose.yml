@@ -3,6 +3,7 @@ version: '3.8'
 services:
   admin:
     build: .
+    working_dir: /app
     command: ["python", "admin.py"]
     restart: always
     env_file:
@@ -12,6 +13,7 @@ services:
 
   user:
     build: .
+    working_dir: /app
     command: ["python", "user.py"]
     restart: always
     env_file:
