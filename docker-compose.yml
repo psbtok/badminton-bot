@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  admin:
+    build: .
+    command: ["python", "admin.py"]
+    restart: always
+
+  user:
+    build: .
+    command: ["python", "user.py"]
+    restart: always
