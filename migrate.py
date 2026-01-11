@@ -23,7 +23,7 @@ def run_migrations(migrations_dir: str = MIGRATIONS_DIR):
     if not os.path.isdir(migrations_dir):
         return
     db = EventService()
-    conn = db.conn
+    conn = db.db.conn
     try:
         ensure_migrations_table(conn)
         applied = get_applied(conn)
