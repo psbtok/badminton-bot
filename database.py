@@ -5,6 +5,12 @@ class Database:
     _instance = None
 
     def __new__(cls, db_path=None):
+        # If instance exists but connection is closed, re-initialize
+        if cls._instance and cls._instance.conn is None:
+            cls._instance.conn = sqlite3.connect(cls._instance.db_path, check_same_thread=False)
+            cls._instance.conn.row_factory = sqlite3.Row
+            return cls._instance
+
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls)
             
