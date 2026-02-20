@@ -129,5 +129,5 @@ This project uses a two-bot, two-chat system to separate user-facing interaction
 
   
 
-To configure the bot, you need the IDs for the public and private chats, as well as the user IDs for administrators. An easy way to find these is to print the JSON data of messages the bot receives, then forward messages from specific chats, bots and users.  
+To configure the bot, you need the IDs for the public and private chats, as well as the user IDs for administrators. An easy way to find these is setup the bot to print the JSON data of messages the bot receives, then forward messages from specific chats, bots and users.  
 By inspecting the message data your bot receives, you can easily find all the necessary IDs for the environment variables.
