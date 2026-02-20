@@ -17,7 +17,7 @@ def register_cancel_handlers(bot, event_service):
             try:
                 dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                 month_name = LOCALES["month_names"][dt.month - 1]
-                formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+                formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
             except Exception:
                 formatted_date = f"{date_str} {time_start}-{time_end}"
             display = f"{formatted_date} — {name}"
@@ -62,7 +62,7 @@ def register_cancel_handlers(bot, event_service):
                 try:
                     dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                     month_name = LOCALES["month_names"][dt.month - 1]
-                    formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+                    formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
                 except Exception:
                     formatted_date = f"{date_str} {time_start}-{time_end}"
             else:
@@ -70,7 +70,7 @@ def register_cancel_handlers(bot, event_service):
 
             summary = f"{formatted_date} — {name}"
             markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton(LOCALES.get("confirm", "Подтвердить"), callback_data="can_confirm"))
+            markup.add(types.InlineKeyboardButton(LOCALES.get("confirm", "Confirm"), callback_data="can_confirm"))
             markup.add(types.InlineKeyboardButton(LOCALES["back"], callback_data="can_back"))
             markup.add(types.InlineKeyboardButton(LOCALES["cancel"], callback_data="can_cancel"))
             bot.edit_message_text(LOCALES["cancel_confirm"].format(event_summary=summary), chat_id, call.message.message_id, reply_markup=markup)
@@ -111,7 +111,7 @@ def register_cancel_handlers(bot, event_service):
                     try:
                         dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                         month_name = LOCALES["month_names"][dt.month - 1]
-                        formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+                        formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
                     except Exception:
                         formatted_date = f"{date_str} {time_start}-{time_end}"
                 else:

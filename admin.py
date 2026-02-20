@@ -47,7 +47,7 @@ original_process = bot.process_new_messages
 def admin_process_wrapper(new_messages):
     for message in new_messages:
         if hasattr(message, 'from_user') and message.from_user.id not in ADMIN_USER_IDS:
-            bot.send_message(message.chat.id, "У вас нет прав для этого действия.")
+            bot.send_message(message.chat.id, LOCALES["no_permission"])
             continue
         original_process([message])  # allow message for admins
 

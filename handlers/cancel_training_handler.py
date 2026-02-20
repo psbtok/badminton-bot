@@ -30,7 +30,7 @@ def register_cancel_training_handlers(bot, event_service):
         event_id = int(call.data.split('_')[2])
         event = event_service.get_event_by_id(event_id)
         if not event:
-            bot.answer_callback_query(call.id, "Тренировка не найдена.", show_alert=True)
+            bot.answer_callback_query(call.id, LOCALES["session_not_found"], show_alert=True)
             return
 
         summary = format_event_summary(event)

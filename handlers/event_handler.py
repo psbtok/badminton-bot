@@ -53,7 +53,7 @@ def register_event_handlers(bot, event_service):
             user_event_state[user_id]["time_start"] = selected_time
             user_event_state[user_id]["time_end"] = selected_time + 2
             user_event_state[user_id]["awaiting_max_participants"] = True
-            bot.edit_message_text("Отправьте максимальное количество участников (или 0, если без ограничений).", chat_id, call.message.message_id)
+            bot.edit_message_text(LOCALES["prompt_max_participants"], chat_id, call.message.message_id)
             return
         if call.data == "back":
             if "time_start" in user_event_state.get(user_id, {}):
@@ -113,7 +113,7 @@ def register_event_handlers(bot, event_service):
             else:
                 raise ValueError()
         except (ValueError, TypeError):
-            bot.send_message(chat_id, "Неверный формат. Пожалуйста, введите число.")
+            bot.send_message(chat_id, LOCALES["invalid_format_number"])
             return
 
         state["awaiting_max_participants"] = False
@@ -124,10 +124,10 @@ def register_event_handlers(bot, event_service):
         dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
         month_name = LOCALES["month_names"][dt.month - 1]
         formatted_date = f"{dt.day} {month_name} {dt.year}"
-        summary = f"{formatted_date} с {time_start:02d}:00 до {time_end:02d}:00"
+        summary = f"{formatted_date} from {time_start:02d}:00 to {time_end:02d}:00"
         max_p = state['max_participants']
         if max_p:
-            summary += f"\nУчастников: до {max_p} человек"
+            summary += LOCALES["participants_count_summary"].format(max_p=max_p)
 
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(LOCALES["confirm"], callback_data="confirm"))

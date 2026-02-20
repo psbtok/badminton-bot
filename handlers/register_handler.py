@@ -15,11 +15,11 @@ def register_register_handlers(bot, event_service):
             event_id, date_str, time_start, time_end, max_participants, current_participants = row
             dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
-            formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+            formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
             
             is_full = max_participants is not None and current_participants >= max_participants
             if is_full:
-                formatted_date += " (мест нет)"
+                formatted_date += LOCALES["session_full"]
 
             result.append((event_id, formatted_date, is_full))
         return result
@@ -88,7 +88,7 @@ def register_register_handlers(bot, event_service):
             date_str, time_start, time_end, _ = row
             dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
             month_name = LOCALES["month_names"][dt.month - 1]
-            formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+            formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
             summary = LOCALES["register_summary"].format(training=formatted_date, name=register_state[user_id]['name'])
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton(LOCALES["confirm"], callback_data="reg_confirm"))
@@ -142,7 +142,7 @@ def register_register_handlers(bot, event_service):
                     date_str, time_start, time_end, _ = row
                     dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
                     month_name = LOCALES["month_names"][dt.month - 1]
-                    formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+                    formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
                     confirm_msg = LOCALES["register_confirmed_full"].format(training=formatted_date, name=state["name"])
                 else:
                     confirm_msg = LOCALES["register_confirmed"]
@@ -174,7 +174,7 @@ def register_register_handlers(bot, event_service):
         date_str, time_start, time_end, _ = row
         dt = _dt.datetime.strptime(date_str, "%Y-%m-%d")
         month_name = LOCALES["month_names"][dt.month - 1]
-        formatted_date = f"{dt.day} {month_name} {dt.year} с {time_start} до {time_end}"
+        formatted_date = f"{dt.day} {month_name} {dt.year} from {time_start} to {time_end}"
         summary = LOCALES["register_summary"].format(training=formatted_date, name=register_state[user_id]['name'])
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(LOCALES["confirm"], callback_data="reg_confirm"))
