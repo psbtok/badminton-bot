@@ -3,9 +3,7 @@
 
   
 
-This is a Telegram bot for managing badminton training sessions.
-
-  
+This is a Telegram bot for managing badminton training sessions. It allows administrators to create and delete training sessions, while users can sign up for or cancel their registration. The bot keeps track of all participants and notifies admins about new registrations and cancellations.
 
 ## Installation
 
@@ -98,12 +96,6 @@ Alternatively, you can run the bots directly from your terminal. You will need t
     ```
 
 ## Architecture Overview
-
-  
-
-## Architecture Overview
-
-  
 
 This project uses a two-bot, two-chat system to separate user-facing interactions from administrative tasks.
 
